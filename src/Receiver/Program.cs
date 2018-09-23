@@ -7,6 +7,8 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -38,6 +40,16 @@ namespace Receiver
 
     internal sealed class Worker
     {
+        private static readonly TelemetryClient _telemetryClient =
+            new TelemetryClient(CreateTelemetryConfiguration());
+
+        private static TelemetryConfiguration CreateTelemetryConfiguration()
+        {
+            TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
+            config.TelemetryChannel.DeveloperMode = true;
+            return config;
+        }
+
         public static void Work(Stream stream)
         {
             stream.Position = 0;
@@ -51,6 +63,8 @@ namespace Receiver
                 StringBuilder sb = new StringBuilder();
                 foreach (Item item in items)
                 {
+                    _telemetryClient.GetMetric(item.Metric).TrackValue(item.Value);
+
                     sb.AppendFormat("{4} {0}: {1} ({3}){2}",
                         item.Metric,
                         item.Value,
